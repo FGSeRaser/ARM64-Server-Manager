@@ -46,7 +46,7 @@ Server stoppen, **Server-Update** tippen, den direkten Download-Link der neuen *
 - Probleme: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 
 ## Rechtliches
-Dieses Projekt steht in **keiner Verbindung zu Mojang oder Microsoft**. Für den Minecraft Bedrock Dedicated Server gelten EULA und Nutzungsrichtlinien; prüfe, ob du ihn in einem öffentlichen Image weitergeben darfst. Ubuntu, box64 (MIT) und proot (GPL-2.0) haben eigene Lizenzen; wer proot-Binaries verteilt, muss den Quellcode zugänglich machen (https://github.com/proot-me/proot). Der App-Code steht unter MIT, siehe [LICENSE](LICENSE). Keine Rechtsberatung.
+Dieses Projekt steht in **keiner Verbindung zu Mojang oder Microsoft**. Für den Minecraft Bedrock Dedicated Server gelten EULA und Nutzungsrichtlinien.
 
 ## Roadmap
 Terraria, Killing Floor (box86) u. a.; gemeinsames Basis-Image + kleine Add-ons je Server.
