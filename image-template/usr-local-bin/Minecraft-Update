@@ -1,0 +1,29 @@
+#!/bin/bash
+# Usage: Minecraft-Update <direct-download-link-to-.zip>
+# The app asks for the link in a dialog and passes it as argument.
+# Language: APP_LANG=de|en (set by the app)
+if [ "$APP_LANG" = "de" ]; then
+  M_TITLE="--- Minecraft Bedrock Update ---"; M_DIR="Ordner /root/minecraft-server fehlt!"
+  M_ASK="Download-Link der neuen .zip Datei: "; M_NONE="Keine URL eingegeben. Update abgebrochen!"
+  M_DL="Lade Update herunter..."; M_UNZIP="Entpacke Update (Welten und Einstellungen werden geschützt)..."
+  M_OK="Update erfolgreich abgeschlossen! Jetzt den Server starten."; M_FAIL="Fehler beim Herunterladen! Überprüfe die URL."
+else
+  M_TITLE="--- Minecraft Bedrock Update ---"; M_DIR="Folder /root/minecraft-server is missing!"
+  M_ASK="Download link of the new .zip file: "; M_NONE="No URL entered. Update cancelled!"
+  M_DL="Downloading update..."; M_UNZIP="Extracting update (worlds and settings are protected)..."
+  M_OK="Update finished successfully! Start the server now."; M_FAIL="Download failed! Check the URL."
+fi
+cd /root/minecraft-server || { echo "$M_DIR"; exit 1; }
+echo "$M_TITLE"
+DOWNLOAD_URL="$1"
+[ -z "$DOWNLOAD_URL" ] && read -r -p "$M_ASK" DOWNLOAD_URL
+[ -z "$DOWNLOAD_URL" ] && { echo "$M_NONE"; exit 1; }
+echo "$M_DL"
+if wget -O bedrock_update.zip "$DOWNLOAD_URL"; then
+    echo "$M_UNZIP"
+    unzip -o bedrock_update.zip -x "server.properties" "permissions.json" "whitelist.json" "allowlist.json"
+    rm -f bedrock_update.zip
+    echo "$M_OK"
+else
+    echo "$M_FAIL"; rm -f bedrock_update.zip; exit 1
+fi

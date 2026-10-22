@@ -1,0 +1,15 @@
+# Flutter / Android
+build/
+.dart_tool/
+.flutter-plugins*
+.packages
+*.iml
+.idea/
+android/.gradle/
+android/local.properties
+android/key.properties
+*.jks
+*.keystore
+# Images are distributed as GitHub Release assets, never commit them
+*.tar.gz
+*.tgz
