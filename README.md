@@ -10,7 +10,7 @@ Turn old (even broken-screen) Android phones into game servers. Load a ready-mad
 
 | | |
 |---|---|
-| 📱 App (APK) | [**ARM64-Server-Manager.apk**](https://github.com/FGSeRaser/ARM64-Server-Manager/releases/download/v1.1.0/ARM64-Server-Manager-v1.1.0.apk) |
+| 📱 App (APK) | [**ARM64-Server-Manager-v1.1.0.apk**](https://github.com/FGSeRaser/ARM64-Server-Manager/releases/download/v1.1.0/ARM64-Server-Manager-v1.1.0.apk) |
 | 🟩 Bedrock image | [**bedrock-full.tar.gz**](https://github.com/FGSeRaser/ARM64-Server-Manager/releases/download/v1.0.0/bedrock-full.tar.gz) |
 | ☕ Java + Bedrock (Paper) | [**paper-full.tar.gz**](https://github.com/FGSeRaser/ARM64-Server-Manager/releases/download/v1.0.0/paper-full.tar.gz) |
 
@@ -26,7 +26,7 @@ Turn old (even broken-screen) Android phones into game servers. Load a ready-mad
 An image is a single `.tar.gz` containing a complete Ubuntu userland, [proot](https://proot-me.github.io/) (no root needed), [box64](https://github.com/ptitSeb/box64) (runs x86_64 servers on ARM64) and the server itself. The app unpacks it into its private storage and runs `start.sh`.
 
 ## Quick start (users)
-1. [**Download the APK**](https://github.com/FGSeRaser/ARM64-Server-Manager/releases/latest/download/ARM64-Server-Manager.apk) (or get it from the [Releases](../../releases) page) and install it (allow "install unknown apps" for your browser/file manager).
+1. [**Download the APK**](https://github.com/FGSeRaser/ARM64-Server-Manager/releases/download/v1.1.0/ARM64-Server-Manager-v1.1.0.apk) (or get it from the [Releases](../../releases) page) and install it (allow "install unknown apps" for your browser/file manager).
 2. Open the app. When asked, allow **notifications** and **battery: unrestricted** (needed for 24/7).
 3. Add an image: tap **Add image** → choose *GitHub / URL* (paste the release link of the image) or *Local* (pick the downloaded `.tar.gz`).
 4. Tap **Install**, wait until it finishes (several hundred MB, one time).
