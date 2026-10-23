@@ -1,5 +1,8 @@
 # Changelog
 
+## Next (app)
+- New *Restore backup* button: restores the world (optionally settings) from a backup .tar.gz into an installed image; old world is moved to before_restore_<time>. Works with existing images.
+
 ## Paper image
 - New image `paper-full.tar.gz`: Paper + Geyser + Floodgate (Java and Bedrock together), Java 25, NetherNet setup button.
 

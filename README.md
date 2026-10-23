@@ -39,6 +39,9 @@ Tap **Settings** to edit `server.properties` (game mode, difficulty, max players
 ### Backups
 Stop the server and tap **Backup**. The app packs the worlds into a `.tar.gz` and copies it to **`Download/ARM64-Server-Manager/<image>/`** on your phone, so you can copy it to a PC or cloud easily. If the app is not allowed to write there, grant *Files / Storage* access for the app (Settings → Apps → ARM64 Server Manager → Permissions); until then the copy goes to the app's own folder (`Android/data/<package>/files/backups`, reachable via USB cable on a PC). The 5 newest backups are also kept inside the app.
 
+### Restoring a backup (e.g. on a new phone)
+Install the image on the new phone (and download the server once), stop the server and tap **Restore backup**. Choose your backup `.tar.gz`; the app restores **only the world** (Paper backups optionally also settings and Geyser/Floodgate data). The existing world is not deleted but moved to `before_restore_<time>` inside the server folder. This works with the existing images, no new image needed. For Bedrock, `level-name` in *Settings* must match the world folder name (the app prints it).
+
 ## Images
 | Image | What it is | Link name |
 |---|---|---|

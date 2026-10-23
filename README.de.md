@@ -39,6 +39,9 @@ Server stoppen, **Download / Update server** tippen, den Link der neuen *Bedrock
 ### Backups
 Server stoppen und **Backup** tippen. Die App packt die Welten in eine `.tar.gz` und kopiert sie nach **`Download/ARM64-Server-Manager/<Image>/`** auf dem Handy, von dort kommst du leicht an die Datei (PC, Cloud). Darf die App dort nicht schreiben, erlaube ihr *Dateien/Speicher* (Einstellungen → Apps → ARM64 Server Manager → Berechtigungen); bis dahin landet die Kopie im App-Ordner (`Android/data/<Paket>/files/backups`, per USB-Kabel am PC erreichbar). Die 5 neuesten Backups bleiben zusätzlich in der App.
 
+### Backup einspielen (z. B. auf einem neuen Handy)
+Image auf dem neuen Handy installieren (und den Server einmal herunterladen), Server stoppen und **Backup einspielen** tippen. Backup-`.tar.gz` wählen; die App spielt **nur die Welt** ein (bei Paper-Backups optional auch Einstellungen und Geyser/Floodgate-Daten). Die vorhandene Welt wird nicht gelöscht, sondern nach `before_restore_<Zeit>` im Serverordner verschoben. Das geht mit den bestehenden Images, ein neues Image ist nicht nötig. Bei Bedrock muss `level-name` unter *Einstellungen* zum Welt-Ordnernamen passen (die App zeigt ihn an).
+
 ## Images
 | Image | Was es ist | Dateiname |
 |---|---|---|

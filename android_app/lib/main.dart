@@ -658,6 +658,222 @@ class _DashboardScreenState extends State<DashboardScreen> {
     log('❌ ${tr('Export fehlgeschlagen. Die Backups liegen weiter im Image-Ordner:', 'Export failed. The backups remain in the image folder:')} ${src.path}');
   }
 
+  /// Führt einen Befehl im Ubuntu des Images aus (über das vorhandene run.sh).
+  /// So braucht die App-Funktion kein neues Image. Gibt den Exit-Code zurück.
+  Future<int> runInImage(ServerImage img, List<String> args,
+      {void Function(String)? onOut}) async {
+    final dir = serverPath(img);
+    await Directory('$dir/tmp').create(recursive: true);
+    final p = await Process.start(
+      '/system/bin/sh',
+      ['run.sh', ...args],
+      workingDirectory: dir,
+      environment: {
+        'HOME': dir,
+        'TMPDIR': '$dir/tmp',
+        'SERVER_DIR': dir,
+        'APP_LANG': isDe ? 'de' : 'en',
+      },
+    );
+    p.stdin.done.catchError((_) {});
+    const dec = Utf8Decoder(allowMalformed: true);
+    final outF = p.stdout.transform(dec).transform(const LineSplitter()).forEach(onOut ?? log);
+    final errF = p.stderr.transform(dec).transform(const LineSplitter()).forEach(log);
+    final code = await p.exitCode;
+    await Future.wait([outF, errF]);
+    return code;
+  }
+
+  /// Spielt ein Backup (.tar.gz) wieder ein, z. B. auf einem neuen Handy.
+  /// Standard: nur die Welt. Die bisherige Welt wird nicht gelöscht, sondern
+  /// nach before_restore_<Zeit> im Serverordner verschoben.
+  Future<void> restoreBackup(ServerImage img) async {
+    if (taskBusy.contains(img.id) || busy.containsKey(img.id)) return;
+    if (running.containsKey(img.id)) {
+      log(tr('⚠️ Bitte zuerst den Server stoppen.', '⚠️ Please stop the server first.'));
+      return;
+    }
+    final rootfs = '${serverPath(img)}/rootfs';
+    final tmpArchive = '$rootfs/root/restore.tar.gz';
+    taskBusy.add(img.id);
+    refresh();
+    try {
+      final PlatformFile? file = await FilePicker.pickFile(type: FileType.any);
+      if (file == null) {
+        log(tr('Abgebrochen (keine Datei gewählt).', 'Cancelled (no file chosen).'));
+        return;
+      }
+      final lower = file.name.toLowerCase();
+      if (!(lower.endsWith('.tar.gz') || lower.endsWith('.tgz'))) {
+        log(tr('⚠️ „${file.name}“ ist kein Backup (.tar.gz).', '⚠️ "${file.name}" is not a backup (.tar.gz).'));
+        return;
+      }
+      log(tr('📂 Lese Backup…', '📂 Reading backup…'));
+      await Directory('$rootfs/root').create(recursive: true);
+      final pickedPath = file.path;
+      if (pickedPath != null && File(pickedPath).existsSync()) {
+        await File(pickedPath).copy(tmpArchive);
+        if (pickedPath.contains('/cache/')) {
+          try {
+            await File(pickedPath).delete();
+          } catch (_) {}
+        }
+      } else {
+        final sink = File(tmpArchive).openWrite();
+        try {
+          await sink.addStream(file.readAsByteStream());
+        } finally {
+          await sink.close();
+        }
+      }
+
+      // Inhalt des Backups prüfen
+      final listing = <String>[];
+      final lc = await runInImage(img, ['tar', '-tzf', '/root/restore.tar.gz'],
+          onOut: listing.add);
+      final names = listing
+          .map((l) => l.startsWith('./') ? l.substring(2) : l)
+          .where((l) => l.isNotEmpty)
+          .toList();
+      if (lc != 0 || names.isEmpty) {
+        log(tr('❌ Das ist kein gültiges Backup.', '❌ This is not a valid backup.'));
+        return;
+      }
+      bool has(String item) =>
+          names.any((n) => n == item || n.startsWith('$item/'));
+      final bedrockBackup = has('worlds');
+      final paperBackup = has('world');
+      if (!bedrockBackup && !paperBackup) {
+        log(tr('❌ Im Backup wurde keine Welt gefunden (erwartet: „worlds“ oder „world“).',
+            '❌ No world found in the backup (expected "worlds" or "world").'));
+        return;
+      }
+      final isPaperImage = File('$rootfs/usr/local/bin/Paper-Run').existsSync();
+      final isBedrockImage = File('$rootfs/usr/local/bin/Minecraft-Run').existsSync();
+      if ((bedrockBackup && isPaperImage) || (!bedrockBackup && isBedrockImage)) {
+        log(tr('❌ Dieses Backup gehört zu einem anderen Server-Typ (Bedrock ↔ Paper). Bitte im passenden Image einspielen.',
+            '❌ This backup belongs to a different server type (Bedrock ↔ Paper). Please restore it in the matching image.'));
+        return;
+      }
+      final targetName = bedrockBackup ? 'minecraft-server' : 'paper-server';
+      final worldItems = bedrockBackup
+          ? <String>['worlds']
+          : ['world', 'world_nether', 'world_the_end'].where(has).toList();
+      final allItems = bedrockBackup
+          ? worldItems
+          : [
+              'world', 'world_nether', 'world_the_end', 'server.properties',
+              'ops.json', 'whitelist.json', 'launcher.properties',
+              'plugins/Geyser-Spigot', 'plugins/floodgate',
+            ].where(has).toList();
+      final extras = allItems.length > worldItems.length;
+
+      if (!mounted) return;
+      final choice = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(tr('Backup einspielen', 'Restore backup')),
+          content: Text(tr(
+            'Backup: ${file.name}\n\nDie aktuelle Welt wird nicht gelöscht, sondern in den Ordner „before_restore_…“ im Serverordner verschoben.',
+            'Backup: ${file.name}\n\nThe current world is not deleted but moved into a "before_restore_…" folder inside the server folder.',
+          )),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Abbrechen', 'Cancel'))),
+            if (extras)
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, 'all'),
+                  child: Text(tr('Welt + Einstellungen', 'World + settings'))),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, 'world'),
+                child: Text(tr('Nur Welt', 'World only'))),
+          ],
+        ),
+      );
+      if (choice == null) {
+        log(tr('Abgebrochen.', 'Cancelled.'));
+        return;
+      }
+      final items = choice == 'all' ? allItems : worldItems;
+
+      final targetDir = '$rootfs/root/$targetName';
+      await Directory(targetDir).create(recursive: true);
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      final before = '$targetDir/before_restore_$ts';
+      final moved = <String>[];
+      Future<void> move(String from, String to) async {
+        await Directory(File(to).parent.path).create(recursive: true);
+        if (FileSystemEntity.isDirectorySync(from)) {
+          await Directory(from).rename(to);
+        } else {
+          await File(from).rename(to);
+        }
+      }
+
+      for (final it in items) {
+        final path = '$targetDir/$it';
+        if (FileSystemEntity.typeSync(path, followLinks: false) ==
+            FileSystemEntityType.notFound) continue;
+        await move(path, '$before/$it');
+        moved.add(it);
+      }
+      if (moved.isNotEmpty) {
+        log(tr('📦 Bisherige Daten gesichert in: root/$targetName/before_restore_$ts',
+            '📦 Previous data kept in: root/$targetName/before_restore_$ts'));
+      }
+
+      log(tr('⏳ Spiele Backup ein (das kann etwas dauern)…', '⏳ Restoring backup (this can take a while)…'));
+      final code = await runInImage(
+          img, ['tar', '-xzf', '/root/restore.tar.gz', '-C', '/root/$targetName', ...items]);
+      if (code != 0) {
+        log(tr('❌ Einspielen fehlgeschlagen, stelle den alten Stand wieder her…',
+            '❌ Restore failed, putting the previous state back…'));
+        for (final it in items) {
+          final path = '$targetDir/$it';
+          try {
+            if (FileSystemEntity.isDirectorySync(path)) {
+              await Directory(path).delete(recursive: true);
+            } else if (File(path).existsSync()) {
+              await File(path).delete();
+            }
+          } catch (_) {}
+          if (moved.contains(it)) {
+            try {
+              await move('$before/$it', path);
+            } catch (e) {
+              log('⚠️ $it: $e');
+            }
+          }
+        }
+        return;
+      }
+      log(tr('✅ Backup eingespielt. Du kannst den Server jetzt starten.',
+          '✅ Backup restored. You can start the server now.'));
+      if (bedrockBackup) {
+        try {
+          final names2 = Directory('$targetDir/worlds')
+              .listSync()
+              .whereType<Directory>()
+              .map((d) => d.uri.pathSegments.where((s) => s.isNotEmpty).last)
+              .toList();
+          if (names2.isNotEmpty) {
+            log(tr(
+              'ℹ️ Welt-Ordner im Backup: ${names2.join(', ')}. Falls abweichend, trage genau diesen Namen unter „Einstellungen“ bei level-name ein, sonst legt der Server eine neue Welt an.',
+              'ℹ️ World folder in the backup: ${names2.join(', ')}. If different, set exactly this name as level-name under "Settings", otherwise the server creates a new world.'));
+          }
+        } catch (_) {}
+      }
+    } catch (e) {
+      log('❌ ${tr('Einspielen', 'Restore')}: $e');
+    } finally {
+      try {
+        final f = File(tmpArchive);
+        if (f.existsSync()) await f.delete();
+      } catch (_) {}
+      taskBusy.remove(img.id);
+      refresh();
+    }
+  }
+
   /// Öffnet einen Editor für eine Einstellungsdatei (z. B. server.properties).
   Future<void> openEditor(ServerImage img, String label, String rel) async {
     final path = '${serverPath(img)}/$rel';
@@ -1101,6 +1317,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               : runAction(img, a['label']!, a['cmd']!,
                                   prompt: a['prompt'], exportDir: a['export']),
                     ),
+                if (img.installed && !isRunning)
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: _orange, foregroundColor: Colors.black),
+                    icon: const Icon(Icons.restore),
+                    label: Text(tr('Backup einspielen', 'Restore backup')),
+                    onPressed: (isBusy || taskBusy.contains(img.id))
+                        ? null
+                        : () => restoreBackup(img),
+                  ),
                 if (isRunning)
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
