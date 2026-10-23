@@ -52,7 +52,7 @@ Both live in the same release, e.g. `https://github.com/FGSeRaser/ARM64-Server-M
 ### Paper image (Java + Bedrock together)
 1. Install the image, then tap **Download / Update server** and type `latest` (or a version like `1.21.8`). This downloads Paper, Geyser and Floodgate.
 2. Tap **Start** once (it stops by itself), tap **Accept EULA** ([Minecraft EULA](https://aka.ms/MinecraftEULA)), tap **Start** again and wait for `Done`; then stop it by typing `stop`.
-3. Tap **Bedrock setup (Geyser)**, then **Start**. This lets Bedrock players join without a Java account and enables NetherNet (needed for Bedrock 26.60+).
+3. Tap **Bedrock without Java account**, then **Start**. This lets Bedrock players join without a Java account and enables NetherNet (needed for Bedrock 26.60+).
 4. Java players join `<phone IP>:25565`, Bedrock players `<phone IP>` port `19132`.
 5. **RAM** sets the Java memory (default `2G`; use `1G`-`1536M` on phones with 4 GB).
 
