@@ -52,7 +52,7 @@ Beide liegen im selben Release, z. B. `https://github.com/FGSeRaser/ARM64-Server
 ### Paper-Image (Java + Bedrock zusammen)
 1. Image installieren, dann **Download / Update server** tippen und `latest` (oder eine Version wie `1.21.8`) eingeben. Das lädt Paper, Geyser und Floodgate.
 2. Einmal **Start** (beendet sich selbst), **Accept EULA** tippen ([Minecraft-EULA](https://aka.ms/MinecraftEULA)), nochmal **Start**, auf `Done` warten und mit `stop` beenden.
-3. **Bedrock setup (Geyser)** tippen, dann **Start**. Damit können Bedrock-Spieler ohne Java-Konto beitreten, und NetherNet wird aktiviert (nötig für Bedrock 26.60+).
+3. **Bedrock without Java account** tippen, dann **Start**. Damit können Bedrock-Spieler ohne Java-Konto beitreten, und NetherNet wird aktiviert (nötig für Bedrock 26.60+).
 4. Java-Spieler: `<Handy-IP>:25565`, Bedrock-Spieler: `<Handy-IP>`, Port `19132`.
 5. **RAM** stellt den Java-Speicher ein (Standard `2G`; bei Handys mit 4 GB eher `1G`-`1536M`).
 
