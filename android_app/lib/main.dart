@@ -51,7 +51,7 @@ const _red = Color(0xFFF38BA8);
 const _grey = Color(0xFF9399B2);
 
 const _defaultBedrockUrl =
-    'https://github.com/YOUR-GITHUB-NAME/ARM64-Server-Manager/releases/download/v1.0/bedrock.tar.gz';
+    'https://github.com/FGSeRaser/ARM64-Server-Manager/releases/download/v1.0.0/bedrock-full.tar.gz';
 
 class ServerManagerApp extends StatelessWidget {
   const ServerManagerApp({super.key});
@@ -595,8 +595,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           final l = m['label'];
           final c = m['cmd'];
           final pr = m['prompt'];
-          if (l is String && c is String) {
-            list.add({'label': l, 'cmd': c, if (pr is String) 'prompt': pr});
+          final ex = m['export'];
+          final ed = m['edit'];
+          if (l is String && (c is String || ed is String)) {
+            list.add({
+              'label': l,
+              if (c is String) 'cmd': c,
+              if (pr is String) 'prompt': pr,
+              if (ex is String) 'export': ex,
+              if (ed is String) 'edit': ed,
+            });
           }
         }
       }
@@ -604,6 +612,65 @@ class _DashboardScreenState extends State<DashboardScreen> {
       // kaputte actions.json ignorieren
     }
     actions[img.id] = list;
+  }
+
+  /// Kopiert neue Dateien aus <Image-Ordner>/<rel> in einen Ordner, den der
+  /// Nutzer leicht erreicht: erst Download/ARM64-Server-Manager/<id>, sonst
+  /// der App-Ordner auf dem Speicher (Android/data/<Paket>/files/backups/<id>).
+  Future<void> exportFiles(ServerImage img, String rel) async {
+    final src = Directory('${serverPath(img)}/$rel');
+    if (!src.existsSync()) {
+      log('⚠️ ${tr('Kein Ordner zum Exportieren gefunden', 'No folder to export found')}: $rel');
+      return;
+    }
+    final files = src.listSync().whereType<File>().toList();
+    if (files.isEmpty) return;
+
+    final candidates = <String>['/storage/emulated/0/Download/ARM64-Server-Manager/${img.id}'];
+    try {
+      final ext = await getExternalStorageDirectory();
+      if (ext != null) candidates.add('${ext.path}/backups/${img.id}');
+    } catch (_) {}
+
+    for (final path in candidates) {
+      try {
+        final dest = Directory(path);
+        await dest.create(recursive: true);
+        var copied = 0;
+        for (final f in files) {
+          final name = f.uri.pathSegments.last;
+          final target = File('$path/$name');
+          if (target.existsSync() && target.lengthSync() == f.lengthSync()) continue;
+          await f.copy(target.path);
+          copied++;
+        }
+        log('📁 ${tr('Backup exportiert nach', 'Backup exported to')}: $path ($copied ${tr('neu', 'new')})');
+        if (!path.contains('/Download/')) {
+          log('ℹ️ ${tr(
+            'Zugriff auf den Download-Ordner fehlt. Erlaube der App unter Einstellungen → Apps → ARM64 Server Manager → Berechtigungen den Zugriff auf Dateien/Speicher, dann nochmal Backup. Bis dahin findest du die Dateien per USB-Kabel am PC unter Android/data/…/files/backups.',
+            'No access to the Download folder. Allow storage/files access for the app under Settings → Apps → ARM64 Server Manager → Permissions, then run Backup again. Until then you can find the files via USB cable on a PC under Android/data/…/files/backups.')}');
+        }
+        return;
+      } catch (_) {
+        continue;
+      }
+    }
+    log('❌ ${tr('Export fehlgeschlagen. Die Backups liegen weiter im Image-Ordner:', 'Export failed. The backups remain in the image folder:')} ${src.path}');
+  }
+
+  /// Öffnet einen Editor für eine Einstellungsdatei (z. B. server.properties).
+  Future<void> openEditor(ServerImage img, String label, String rel) async {
+    final path = '${serverPath(img)}/$rel';
+    if (!File(path).existsSync()) {
+      log('⚠️ ${tr('Die Datei gibt es noch nicht. Starte den Server einmal (und stoppe ihn), dann wird sie angelegt:', 'The file does not exist yet. Start the server once (and stop it), it will then be created:')}\n$rel');
+      return;
+    }
+    final saved = await Navigator.of(context).push<bool>(MaterialPageRoute(
+      builder: (_) => PropertiesEditorPage(path: path, title: label, de: isDe),
+    ));
+    if (saved == true) {
+      log('💾 ${tr('Gespeichert. Server neu starten, damit die Änderung wirkt.', 'Saved. Restart the server for the change to take effect.')}');
+    }
   }
 
   /// Fragt einen Text ab (z. B. Download-Link). null = abgebrochen.
@@ -626,7 +693,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Future<void> runAction(ServerImage img, String label, String cmd, {String? prompt}) async {
+  Future<void> runAction(ServerImage img, String label, String cmd,
+      {String? prompt, String? exportDir}) async {
     if (taskBusy.contains(img.id) || busy.containsKey(img.id)) return;
     if (running.containsKey(img.id)) {
       log(tr('⚠️ Bitte zuerst den Server stoppen.', '⚠️ Please stop the server first.'));
@@ -665,6 +733,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final code = await p.exitCode;
       await Future.wait([outF, errF]);
       log('${code == 0 ? '✅' : '⚠️'} $label ${tr('beendet', 'finished')} (Exit $code)');
+      if (code == 0 && exportDir != null) await exportFiles(img, exportDir);
     } catch (e) {
       log('❌ $label: $e');
     } finally {
@@ -1023,11 +1092,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                           backgroundColor: _orange, foregroundColor: Colors.black),
-                      icon: const Icon(Icons.build),
+                      icon: Icon(a['edit'] != null ? Icons.settings : Icons.build),
                       label: Text(a['label']!),
                       onPressed: (isBusy || taskBusy.contains(img.id))
                           ? null
-                          : () => runAction(img, a['label']!, a['cmd']!, prompt: a['prompt']),
+                          : () => a['edit'] != null
+                              ? openEditor(img, a['label']!, a['edit']!)
+                              : runAction(img, a['label']!, a['cmd']!,
+                                  prompt: a['prompt'], exportDir: a['export']),
                     ),
                 if (isRunning)
                   ElevatedButton.icon(
@@ -1211,6 +1283,153 @@ class _DashboardScreenState extends State<DashboardScreen> {
           NavigationDestination(icon: const Icon(Icons.terminal), label: tr('Konsole', 'Console')),
         ],
       ),
+    );
+  }
+}
+
+
+/// Einfacher Editor für *.properties-Dateien: ein Feld pro Eintrag,
+/// Kommentare und Reihenfolge bleiben beim Speichern erhalten.
+class PropertiesEditorPage extends StatefulWidget {
+  final String path;
+  final String title;
+  final bool de;
+  const PropertiesEditorPage({super.key, required this.path, required this.title, required this.de});
+
+  @override
+  State<PropertiesEditorPage> createState() => _PropertiesEditorPageState();
+}
+
+class _PropertiesEditorPageState extends State<PropertiesEditorPage> {
+  static const Map<String, List<String>> _choices = {
+    'gamemode': ['survival', 'creative', 'adventure'],
+    'difficulty': ['peaceful', 'easy', 'normal', 'hard'],
+    'default-player-permission-level': ['visitor', 'member', 'operator'],
+    'level-type': ['DEFAULT', 'FLAT', 'LEGACY'],
+    'server-authoritative-movement': ['client-auth', 'server-auth', 'server-auth-with-rewind'],
+  };
+
+  List<String> lines = [];
+  final Map<int, TextEditingController> ctrls = {};
+  final Map<int, String> keys = {};
+  bool loading = true;
+  String? error;
+
+  String tr(String de, String en) => widget.de ? de : en;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    for (final c in ctrls.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final text = await File(widget.path).readAsString();
+      lines = text.replaceAll('\r\n', '\n').split('\n');
+      for (var i = 0; i < lines.length; i++) {
+        final l = lines[i];
+        if (l.trim().isEmpty || l.trimLeft().startsWith('#')) continue;
+        final idx = l.indexOf('=');
+        if (idx <= 0) continue;
+        keys[i] = l.substring(0, idx).trim();
+        ctrls[i] = TextEditingController(text: l.substring(idx + 1));
+      }
+    } catch (e) {
+      error = '$e';
+    }
+    if (mounted) setState(() => loading = false);
+  }
+
+  Future<void> _save() async {
+    final out = <String>[];
+    for (var i = 0; i < lines.length; i++) {
+      final c = ctrls[i];
+      if (c == null) {
+        out.add(lines[i]);
+      } else {
+        final v = c.text.replaceAll('\n', ' ').replaceAll('\r', '').trim();
+        out.add('${keys[i]}=$v');
+      }
+    }
+    try {
+      await File(widget.path).writeAsString(out.join('\n'));
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ $e')));
+      }
+    }
+  }
+
+  Widget _row(int i) {
+    final key = keys[i]!;
+    final c = ctrls[i]!;
+    final v = c.text.trim().toLowerCase();
+    if (v == 'true' || v == 'false') {
+      return SwitchListTile(
+        title: Text(key),
+        value: v == 'true',
+        onChanged: (b) => setState(() => c.text = b ? 'true' : 'false'),
+      );
+    }
+    final opts = _choices[key];
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: TextField(
+        controller: c,
+        decoration: InputDecoration(
+          labelText: key,
+          border: const OutlineInputBorder(),
+          suffixIcon: opts == null
+              ? null
+              : PopupMenuButton<String>(
+                  icon: const Icon(Icons.arrow_drop_down),
+                  onSelected: (o) => setState(() => c.text = o),
+                  itemBuilder: (_) => [for (final o in opts) PopupMenuItem(value: o, child: Text(o))],
+                ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+        actions: [
+          IconButton(
+            tooltip: tr('Speichern', 'Save'),
+            icon: const Icon(Icons.save),
+            onPressed: loading || error != null ? null : _save,
+          ),
+        ],
+      ),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : error != null
+              ? Center(child: Text('❌ $error'))
+              : ListView(
+                  padding: const EdgeInsets.only(bottom: 32),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(tr(
+                          'Änderungen wirken nach dem nächsten Serverstart.',
+                          'Changes take effect after the next server start.')),
+                    ),
+                    for (final i in keys.keys) _row(i),
+                  ],
+                ),
     );
   }
 }

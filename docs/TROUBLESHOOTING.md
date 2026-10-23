@@ -11,3 +11,4 @@
 | App crashes (OutOfMemory) when picking a large image | Happened with the `file_selector` package; the app uses `file_picker` which copies the file as a stream. Keep that package. |
 | Install over old APK says conflict | APK signed with a different key: uninstall first (this deletes installed images). |
 | Update/Backup button says "stop server first" | Stop the server, then run the action. |
+| `command not found` for a program that exists in the image (e.g. `unzip`) | proot's `--link2symlink` stores hard links as absolute symlinks into `.l2s`, which break when the rootfs is moved. `make-image.sh` converts them to real files before packing; rebuild the image with the current script. |

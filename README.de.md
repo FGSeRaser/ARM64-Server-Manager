@@ -10,7 +10,7 @@ Mach aus alten (auch defekten) Android-Handys Spieleserver. Fertiges **Image** l
 - Images per Klick installieren: aus einer **lokalen Datei** oder einer **GitHub-Release-URL**
 - Start/Stop per Knopf, **interaktive Konsole** (Befehle an den Server oder Shell-Befehle)
 - **Vordergrunddienst**, damit Server 24/7 auch bei ausgeschaltetem Display laufen
-- Zusätzliche Knöpfe pro Image (z. B. *Server-Update*, *Backup*), vom Image selbst definiert
+- Zusätzliche Knöpfe pro Image (z. B. *Download / Update server*, *Backup*), vom Image selbst definiert
 - Deutsche / englische Oberfläche und Skript-Ausgaben
 - Mehrere Images nebeneinander
 
@@ -22,7 +22,8 @@ Ein Image ist eine `.tar.gz` mit komplettem Ubuntu, [proot](https://proot-me.git
 2. App öffnen. **Benachrichtigungen** erlauben und Akku auf **Unbeschränkt** stellen (nötig für 24/7).
 3. **Image hinzufügen** → *GitHub / URL* (Release-Link des Images einfügen) oder *Lokal* (heruntergeladene `.tar.gz` wählen).
 4. **Installieren** tippen und warten (mehrere hundert MB, nur einmal).
-5. **Starten** tippen. In Minecraft Bedrock mit `<Handy-IP>`, Port `19132` (UDP) beitreten.
+5. **Server herunterladen (einmalig):** https://www.minecraft.net/en-us/download/server/bedrock öffnen, EULA akzeptieren und den Link bei **Ubuntu (Linux)** kopieren (Rechtsklick auf den Button → *Linkadresse kopieren*, endet auf `.zip`). In der App **Download / Update server** tippen und den Link einfügen.
+6. **Starten** tippen. In Minecraft Bedrock mit `<Handy-IP>`, Port `19132` (UDP) beitreten.
 
 > **Ports:** Für Mitspieler von außen UDP `19132` im Router freigeben.
 
@@ -30,10 +31,13 @@ Ein Image ist eine `.tar.gz` mit komplettem Ubuntu, [proot](https://proot-me.git
 GrapheneOS hat pro App einen **Netzwerk**-Schalter (Einstellungen → Apps → *ARM64 Server Manager* → Berechtigungen → **Netzwerk**). Er muss **an** sein, sonst kann der Server keinen Port öffnen („Port may be in use“ / `Permission denied`).
 
 ### Minecraft-Server updaten
-Server stoppen, **Server-Update** tippen, den direkten Download-Link der neuen *Bedrock-Server für Linux* `.zip` von minecraft.net einfügen. Welten und `server.properties` bleiben erhalten.
+Server stoppen, **Download / Update server** tippen, den Link der neuen *Bedrock-Server für Linux* `.zip` von minecraft.net einfügen. Welten und `server.properties` bleiben erhalten.
+
+### Servereinstellungen
+**Settings / Einstellungen** öffnet `server.properties` (Spielmodus, Schwierigkeit, Spielerzahl, Weltname …) mit einfachen Schaltern und Feldern. Die Datei gibt es nach dem ersten Serverstart. Danach den Server neu starten.
 
 ### Backups
-**Backup** legt eine `.tar.gz` der Welten im privaten App-Speicher ab (`servers/<image>/rootfs/root/backups`).
+Server stoppen und **Backup** tippen. Die App packt die Welten in eine `.tar.gz` und kopiert sie nach **`Download/ARM64-Server-Manager/<Image>/`** auf dem Handy, von dort kommst du leicht an die Datei (PC, Cloud). Darf die App dort nicht schreiben, erlaube ihr *Dateien/Speicher* (Einstellungen → Apps → ARM64 Server Manager → Berechtigungen); bis dahin landet die Kopie im App-Ordner (`Android/data/<Paket>/files/backups`, per USB-Kabel am PC erreichbar). Die 5 neuesten Backups bleiben zusätzlich in der App.
 
 ## Voraussetzungen
 - Android 10+ (getestet: Pixel 9a / GrapheneOS, Android 17), ARM64-Handy, ca. 3 GB freier Speicher, mehr RAM ist besser (noch nicht gemessen)
@@ -46,7 +50,7 @@ Server stoppen, **Server-Update** tippen, den direkten Download-Link der neuen *
 - Probleme: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 
 ## Rechtliches
-Dieses Projekt steht in **keiner Verbindung zu Mojang oder Microsoft**. Für den Minecraft Bedrock Dedicated Server gelten EULA und Nutzungsrichtlinien.
+Dieses Projekt steht in **keiner Verbindung zu Mojang oder Microsoft**. Für den Minecraft Bedrock Dedicated Server gelten EULA und Nutzungsrichtlinien; das Image enthält ihn deshalb **nicht**: Jeder Nutzer lädt ihn selbst von minecraft.net herunter. Ubuntu, box64 (MIT) und proot (GPL-2.0) haben eigene Lizenzen; wer proot-Binaries verteilt, muss den Quellcode zugänglich machen (https://github.com/proot-me/proot). Der App-Code steht unter MIT, siehe [LICENSE](LICENSE). Keine Rechtsberatung.
 
 ## Roadmap
 Terraria, Killing Floor (box86) u. a.; gemeinsames Basis-Image + kleine Add-ons je Server.

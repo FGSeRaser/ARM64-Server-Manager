@@ -13,6 +13,8 @@ if [ -d "$SOURCE_DIR" ]; then
     echo "$M_RUN"
     tar -czf "$BACKUP_DIR/world_backup_$TIMESTAMP.tar.gz" -C /root/minecraft-server worlds
     echo "$M_OK $BACKUP_DIR/world_backup_$TIMESTAMP.tar.gz"
+    # keep only the 5 newest backups inside the app (exported copies stay untouched)
+    ls -1t "$BACKUP_DIR"/world_backup_*.tar.gz 2>/dev/null | tail -n +6 | while read -r old; do rm -f "$old"; done
     ls -lh "$BACKUP_DIR" | tail -n 5
 else
     echo "$M_ERR"; exit 1

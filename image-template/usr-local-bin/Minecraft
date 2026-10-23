@@ -1,0 +1,13 @@
+#!/bin/bash
+# Wrapper: checks that the server was downloaded, then runs the original start script (Minecraft-Run).
+if [ ! -f /root/minecraft-server/bedrock_server ]; then
+  if [ "$APP_LANG" = "de" ]; then
+    echo "Der Bedrock-Server ist noch nicht heruntergeladen."
+    echo "Tippe auf 'Server laden / Update' und füge den Download-Link der Linux-.zip von minecraft.net ein."
+  else
+    echo "The Bedrock server has not been downloaded yet."
+    echo "Tap 'Download / Update server' and paste the Linux .zip download link from minecraft.net."
+  fi
+  exit 1
+fi
+exec /usr/local/bin/Minecraft-Run "$@"

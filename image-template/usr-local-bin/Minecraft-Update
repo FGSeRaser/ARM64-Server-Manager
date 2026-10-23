@@ -1,29 +1,45 @@
 #!/bin/bash
-# Usage: Minecraft-Update <direct-download-link-to-.zip>
-# The app asks for the link in a dialog and passes it as argument.
-# Language: APP_LANG=de|en (set by the app)
+# Downloads / updates the Bedrock server. Usage: Minecraft-Update <direct link to .zip>
+# The app asks for the link in a dialog. Language: APP_LANG=de|en
 if [ "$APP_LANG" = "de" ]; then
-  M_TITLE="--- Minecraft Bedrock Update ---"; M_DIR="Ordner /root/minecraft-server fehlt!"
-  M_ASK="Download-Link der neuen .zip Datei: "; M_NONE="Keine URL eingegeben. Update abgebrochen!"
-  M_DL="Lade Update herunter..."; M_UNZIP="Entpacke Update (Welten und Einstellungen werden geschützt)..."
-  M_OK="Update erfolgreich abgeschlossen! Jetzt den Server starten."; M_FAIL="Fehler beim Herunterladen! Überprüfe die URL."
+  M_TITLE="--- Minecraft Bedrock: Server laden / updaten ---"
+  M_ASK="Download-Link der .zip Datei: "; M_NONE="Keine URL eingegeben. Abgebrochen!"
+  M_DL="Lade Server herunter..."; M_UNZIP="Entpacke (vorhandene Welten und Einstellungen bleiben erhalten)..."
+  M_OK="Fertig! Jetzt den Server starten."; M_FAIL="Fehler beim Herunterladen! Link prüfen (muss direkt auf die .zip zeigen) und Netzwerk-Berechtigung der App prüfen."
+  M_BAD="Die Datei ist keine gültige .zip. Link prüfen!"
 else
-  M_TITLE="--- Minecraft Bedrock Update ---"; M_DIR="Folder /root/minecraft-server is missing!"
-  M_ASK="Download link of the new .zip file: "; M_NONE="No URL entered. Update cancelled!"
-  M_DL="Downloading update..."; M_UNZIP="Extracting update (worlds and settings are protected)..."
-  M_OK="Update finished successfully! Start the server now."; M_FAIL="Download failed! Check the URL."
+  M_TITLE="--- Minecraft Bedrock: download / update server ---"
+  M_ASK="Download link of the .zip file: "; M_NONE="No URL entered. Cancelled!"
+  M_DL="Downloading server..."; M_UNZIP="Extracting (existing worlds and settings are kept)..."
+  M_OK="Done! Now start the server."; M_FAIL="Download failed! Check the link (must point directly to the .zip) and the app's network permission."
+  M_BAD="The file is not a valid .zip. Check the link!"
 fi
-cd /root/minecraft-server || { echo "$M_DIR"; exit 1; }
+mkdir -p /root/minecraft-server && cd /root/minecraft-server || exit 1
 echo "$M_TITLE"
-DOWNLOAD_URL="$1"
-[ -z "$DOWNLOAD_URL" ] && read -r -p "$M_ASK" DOWNLOAD_URL
-[ -z "$DOWNLOAD_URL" ] && { echo "$M_NONE"; exit 1; }
+URL="$1"
+[ -z "$URL" ] && read -r -p "$M_ASK" URL
+[ -z "$URL" ] && { echo "$M_NONE"; exit 1; }
 echo "$M_DL"
-if wget -O bedrock_update.zip "$DOWNLOAD_URL"; then
-    echo "$M_UNZIP"
-    unzip -o bedrock_update.zip -x "server.properties" "permissions.json" "whitelist.json" "allowlist.json"
-    rm -f bedrock_update.zip
-    echo "$M_OK"
-else
-    echo "$M_FAIL"; rm -f bedrock_update.zip; exit 1
+if ! wget -q --show-progress --user-agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36" -O bedrock_update.zip "$URL"; then
+  echo "$M_FAIL"; rm -f bedrock_update.zip; exit 1
 fi
+if ! command -v unzip >/dev/null 2>&1; then
+  echo "unzip fehlt / is missing (apt-get install -y unzip)"; rm -f bedrock_update.zip; exit 1
+fi
+if ! unzip -tq bedrock_update.zip; then
+  echo "$M_BAD"; ls -l bedrock_update.zip; head -c 200 bedrock_update.zip | tr -c '[:print:]\n' '.'; echo
+  rm -f bedrock_update.zip; exit 1
+fi
+echo "$M_UNZIP"
+EXCL=()
+for f in server.properties permissions.json allowlist.json whitelist.json; do
+  [ -e "$f" ] && EXCL+=("$f")
+done
+if [ ${#EXCL[@]} -gt 0 ]; then
+  unzip -oq bedrock_update.zip -x "${EXCL[@]}"
+else
+  unzip -oq bedrock_update.zip
+fi
+rm -f bedrock_update.zip
+chmod +x bedrock_server 2>/dev/null
+echo "$M_OK"

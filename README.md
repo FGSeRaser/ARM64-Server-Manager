@@ -10,7 +10,7 @@ Turn old (even broken-screen) Android phones into game servers. Load a ready-mad
 - One-tap install of server images from a **local file** or a **GitHub release URL**
 - Start / stop with buttons, **interactive console** (send commands to the server or run shell commands)
 - **Foreground service** so servers keep running 24/7 with the screen off
-- Extra buttons per image (e.g. *Server-Update*, *Backup*) defined by the image itself
+- Extra buttons per image (e.g. *Download / Update server*, *Backup*) defined by the image itself
 - German / English UI and script output
 - Several images side by side
 
@@ -22,7 +22,8 @@ An image is a single `.tar.gz` containing a complete Ubuntu userland, [proot](ht
 2. Open the app. When asked, allow **notifications** and **battery: unrestricted** (needed for 24/7).
 3. Add an image: tap **Add image** → choose *GitHub / URL* (paste the release link of the image) or *Local* (pick the downloaded `.tar.gz`).
 4. Tap **Install**, wait until it finishes (several hundred MB, one time).
-5. Tap **Start**. Join with Minecraft Bedrock via `<phone IP>`, port `19132` (UDP).
+5. **Download the server (once):** open https://www.minecraft.net/en-us/download/server/bedrock, accept the EULA and copy the link of **Ubuntu (Linux)** (right-click the button → *Copy link address*; it ends in `.zip`). In the app tap **Download / Update server** and paste the link.
+6. Tap **Start**. Join with Minecraft Bedrock via `<phone IP>`, port `19132` (UDP).
 
 > **Ports:** forward UDP `19132` on your router if friends should join from outside your network.
 
@@ -30,10 +31,13 @@ An image is a single `.tar.gz` containing a complete Ubuntu userland, [proot](ht
 GrapheneOS has a per-app **Network** switch (Settings → Apps → *ARM64 Server Manager* → Permissions → **Network**). It must be **on**, otherwise the server cannot open any port ("Port may be in use" / `Permission denied`).
 
 ### Updating the Minecraft server
-Stop the server, tap **Server-Update**, paste the direct download link of the new *Bedrock server for Linux* `.zip` from minecraft.net. Worlds and `server.properties` are kept.
+Stop the server, tap **Download / Update server**, paste the link of the new *Bedrock server for Linux* `.zip` from minecraft.net. Worlds and `server.properties` are kept.
+
+### Server settings
+Tap **Settings** to edit `server.properties` (game mode, difficulty, max players, world name …) with simple switches and fields. The file exists after the first server start. Restart the server afterwards.
 
 ### Backups
-**Backup** stores a `.tar.gz` of the worlds in the app's private storage (`servers/<image>/rootfs/root/backups`).
+Stop the server and tap **Backup**. The app packs the worlds into a `.tar.gz` and copies it to **`Download/ARM64-Server-Manager/<image>/`** on your phone, so you can copy it to a PC or cloud easily. If the app is not allowed to write there, grant *Files / Storage* access for the app (Settings → Apps → ARM64 Server Manager → Permissions); until then the copy goes to the app's own folder (`Android/data/<package>/files/backups`, reachable via USB cable on a PC). The 5 newest backups are also kept inside the app.
 
 ## Requirements
 - Android 10+ (tested: Pixel 9a / GrapheneOS, Android 17), ARM64 phone, ~3 GB free storage, more RAM is better (not benchmarked yet)
@@ -46,7 +50,7 @@ Stop the server, tap **Server-Update**, paste the direct download link of the ne
 - Problems: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 
 ## Legal
-This project is **not affiliated with Mojang or Microsoft**. The Minecraft Bedrock Dedicated Server is subject to the Minecraft EULA and Usage Guidelines.
+This project is **not affiliated with Mojang or Microsoft**. The Minecraft Bedrock Dedicated Server is subject to the Minecraft EULA and Usage Guidelines; the image therefore does **not** contain it: every user downloads it from minecraft.net themselves. Ubuntu, box64 (MIT) and proot (GPL-2.0) have their own licenses; if you distribute proot binaries you must make its source available (https://github.com/proot-me/proot). The app code is MIT licensed, see [LICENSE](LICENSE). Nothing here is legal advice.
 
 ## Roadmap
 Terraria, Killing Floor (box86) and others; shared base image + small add-on packages per server.

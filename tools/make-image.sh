@@ -22,6 +22,9 @@ fi
 [ -f "$PREFIX/lib/libtalloc.so.2" ] || { echo "libtalloc.so.2 fehlt (pkg install libtalloc)"; exit 1; }
 [ -f "$PREFIX/libexec/proot/loader" ] || { echo "proot-loader fehlt"; exit 1; }
 
+echo "[0/4] Prüfe/installiere wget, unzip, ca-certificates im Ubuntu..."
+proot-distro login "$DISTRO" -- bash -c 'command -v wget >/dev/null && command -v unzip >/dev/null && [ -d /etc/ssl/certs ] || (apt-get update && apt-get install -y wget unzip ca-certificates)' || { echo "Installation fehlgeschlagen"; exit 1; }
+
 echo "[1/4] Aufräumen im Ubuntu (apt-Cache)..."
 proot-distro login "$DISTRO" -- apt-get clean || true
 
@@ -90,8 +93,9 @@ EOF
 # Knöpfe, die die App zusätzlich anzeigt
 cat > "$OUT/actions.json" <<'EOF'
 [
-  {"label": "Server-Update", "cmd": "sh update.sh \"$ACTION_INPUT\"", "prompt": "Direkter Download-Link der neuen Bedrock-Server .zip"},
-  {"label": "Backup", "cmd": "sh backup.sh"}
+  {"label": "Download / Update server", "cmd": "sh update.sh \"$ACTION_INPUT\"", "prompt": "Direct download link of the Bedrock server for Linux (.zip) from minecraft.net"},
+  {"label": "Settings / Einstellungen", "edit": "rootfs/root/minecraft-server/server.properties"},
+  {"label": "Backup", "cmd": "sh backup.sh", "export": "rootfs/root/backups"}
 ]
 EOF
 
@@ -104,12 +108,28 @@ echo
 echo "Was soll NICHT ins Image (z. B. Killing-Floor- oder Steam-Ordner)?"
 read -r -p "Namen, Leerzeichen getrennt (Enter = nichts ausschließen): " -a EXCL
 EXCLUDE_ARGS=()
+# Always excluded: the Mojang server files and worlds, backups, private files
+for n in minecraft-server backups .bash_history .ssh .cache .wget-hsts .viminfo .lesshst; do
+  EXCLUDE_ARGS+=(--exclude="$DISTRO/root/$n")
+done
 for n in "${EXCL[@]}"; do
   EXCLUDE_ARGS+=(--exclude="$DISTRO/root/$n")
 done
 
 echo "Mache Ordner im Ubuntu lesbar (sonst bricht tar ab)..."
 chmod -R u+rwX "$ROOTFS" 2>/dev/null || true
+
+echo "Wandle proot-Hardlink-Ersatz (.l2s-Symlinks) in echte Dateien um..."
+FIXED=0; BROKEN=0
+while IFS= read -r l; do
+  t=$(readlink "$l")
+  if [ -f "$t" ]; then
+    rm -f "$l" && cp -p "$t" "$l" && FIXED=$((FIXED+1))
+  else
+    echo "  defekt (Ziel fehlt): $l -> $t"; BROKEN=$((BROKEN+1))
+  fi
+done < <(find "$ROOTFS" -path "$ROOTFS/.l2s" -prune -o -type l -lname '*/.l2s/*' -print)
+echo "  umgewandelt: $FIXED, defekt: $BROKEN"
 
 echo "[4/4] Packe Image (das dauert und braucht viel Platz)..."
 tar -czf "$RESULT" \
