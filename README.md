@@ -6,6 +6,14 @@ Turn old (even broken-screen) Android phones into game servers. Load a ready-mad
 
 🇩🇪 [Deutsche Version](README.de.md)
 
+## Downloads
+
+| | |
+|---|---|
+| 📱 App (APK) | [**ARM64-Server-Manager.apk**](https://github.com/FGSeRaser/ARM64-Server-Manager/releases/latest/download/ARM64-Server-Manager.apk) |
+| 🟩 Bedrock image | [**bedrock-full.tar.gz**](https://github.com/FGSeRaser/ARM64-Server-Manager/releases/download/v1.0.0/bedrock-full.tar.gz) |
+| ☕ Java + Bedrock (Paper) | [**paper-full.tar.gz**](https://github.com/FGSeRaser/ARM64-Server-Manager/releases/download/v1.0.0/paper-full.tar.gz) |
+
 ## Features
 - One-tap install of server images from a **local file** or a **GitHub release URL**
 - Start / stop with buttons, **interactive console** (send commands to the server or run shell commands)
@@ -18,7 +26,7 @@ Turn old (even broken-screen) Android phones into game servers. Load a ready-mad
 An image is a single `.tar.gz` containing a complete Ubuntu userland, [proot](https://proot-me.github.io/) (no root needed), [box64](https://github.com/ptitSeb/box64) (runs x86_64 servers on ARM64) and the server itself. The app unpacks it into its private storage and runs `start.sh`.
 
 ## Quick start (users)
-1. Install the APK from the [Releases](../../releases) page (allow "install unknown apps" for your browser/file manager).
+1. [**Download the APK**](https://github.com/FGSeRaser/ARM64-Server-Manager/releases/latest/download/ARM64-Server-Manager.apk) (or get it from the [Releases](../../releases) page) and install it (allow "install unknown apps" for your browser/file manager).
 2. Open the app. When asked, allow **notifications** and **battery: unrestricted** (needed for 24/7).
 3. Add an image: tap **Add image** → choose *GitHub / URL* (paste the release link of the image) or *Local* (pick the downloaded `.tar.gz`).
 4. Tap **Install**, wait until it finishes (several hundred MB, one time).
@@ -45,10 +53,10 @@ Install the image on the new phone (and download the server once), stop the serv
 ## Images
 | Image | What it is | Link name |
 |---|---|---|
-| Minecraft Bedrock | Official Bedrock server via box64 | `bedrock-full.tar.gz` |
-| Minecraft Java + Bedrock | Paper (Java) + Geyser/Floodgate, native ARM64 Java 25 | `paper-full.tar.gz` |
+| Minecraft Bedrock | Official Bedrock server via box64 | [**bedrock-full.tar.gz**](https://github.com/FGSeRaser/ARM64-Server-Manager/releases/download/v1.0.0/bedrock-full.tar.gz) |
+| Minecraft Java + Bedrock | Paper (Java) + Geyser/Floodgate, native ARM64 Java 25 | [**paper-full.tar.gz**](https://github.com/FGSeRaser/ARM64-Server-Manager/releases/download/v1.0.0/paper-full.tar.gz) |
 
-Both live in the same release, e.g. `https://github.com/FGSeRaser/ARM64-Server-Manager/releases/download/v1.0.0/paper-full.tar.gz`. The Mojang server is never part of an image.
+Click the file name to download the image directly. In the app you can also paste the link when installing. The Mojang server is never part of an image.
 
 > **Both images use port 19132 (UDP)**, so run only one of them at a time on the same phone.
 
