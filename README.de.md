@@ -39,6 +39,15 @@ Server stoppen, **Download / Update server** tippen, den Link der neuen *Bedrock
 ### Backups
 Server stoppen und **Backup** tippen. Die App packt die Welten in eine `.tar.gz` und kopiert sie nach **`Download/ARM64-Server-Manager/<Image>/`** auf dem Handy, von dort kommst du leicht an die Datei (PC, Cloud). Darf die App dort nicht schreiben, erlaube ihr *Dateien/Speicher* (Einstellungen → Apps → ARM64 Server Manager → Berechtigungen); bis dahin landet die Kopie im App-Ordner (`Android/data/<Paket>/files/backups`, per USB-Kabel am PC erreichbar). Die 5 neuesten Backups bleiben zusätzlich in der App.
 
+### Mit Freunden übers Internet spielen: Tailscale
+Statt Ports im Router freizugeben, kannst du [Tailscale](https://tailscale.com/download) nutzen (für private Nutzung kostenlos, Apps für Android, iOS, Windows, macOS und Linux):
+1. Tailscale auf dem **Server-Handy** installieren und anmelden. Die Tailscale-Adresse (`100.x.y.z`) steht in der Tailscale-App.
+2. Freunde erreichen es auf zwei Wegen: Entweder lädst du sie in dein Tailnet ein, oder du gibst nur das Server-Handy per [Node Sharing](https://tailscale.com/kb/1084/sharing) für ihr eigenes Tailscale-Konto frei.
+3. Freunde installieren Tailscale auf Handy/PC und melden sich an.
+4. In Minecraft Bedrock (Android, iOS, Windows) einen Server mit der Tailscale-Adresse des Server-Handys und Port `19132` hinzufügen.
+
+Hinweise: Spielkonsolen können kein Tailscale, und Bedrock auf Konsolen hat kein freies „Server hinzufügen“-Feld, es geht also für Handy-/PC-Spieler. Unter GrapheneOS muss auch für Tailscale der **Netzwerk**-Schalter der App an sein. Ich habe diesen Aufbau selbst noch nicht getestet; wenn es bei dir nicht klappt, eröffne bitte ein Issue.
+
 ## Voraussetzungen
 - Android 10+ (getestet: Pixel 9a / GrapheneOS, Android 17), ARM64-Handy, ca. 3 GB freier Speicher, mehr RAM ist besser (noch nicht gemessen)
 - Handy dauerhaft am Strom (Akku-Mod oder Ladegerät)
