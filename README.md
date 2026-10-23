@@ -10,7 +10,7 @@ Turn old (even broken-screen) Android phones into game servers. Load a ready-mad
 
 | | |
 |---|---|
-| 📱 App (APK) | [**ARM64-Server-Manager.apk**](https://github.com/FGSeRaser/ARM64-Server-Manager/releases/latest/download/ARM64-Server-Manager.apk) |
+| 📱 App (APK) | [**ARM64-Server-Manager.apk**](https://github.com/FGSeRaser/ARM64-Server-Manager/releases/download/v1.1.0/ARM64-Server-Manager-v1.1.0.apk) |
 | 🟩 Bedrock image | [**bedrock-full.tar.gz**](https://github.com/FGSeRaser/ARM64-Server-Manager/releases/download/v1.0.0/bedrock-full.tar.gz) |
 | ☕ Java + Bedrock (Paper) | [**paper-full.tar.gz**](https://github.com/FGSeRaser/ARM64-Server-Manager/releases/download/v1.0.0/paper-full.tar.gz) |
 
