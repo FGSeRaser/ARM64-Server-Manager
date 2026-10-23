@@ -39,6 +39,25 @@ Server stoppen, **Download / Update server** tippen, den Link der neuen *Bedrock
 ### Backups
 Server stoppen und **Backup** tippen. Die App packt die Welten in eine `.tar.gz` und kopiert sie nach **`Download/ARM64-Server-Manager/<Image>/`** auf dem Handy, von dort kommst du leicht an die Datei (PC, Cloud). Darf die App dort nicht schreiben, erlaube ihr *Dateien/Speicher* (Einstellungen → Apps → ARM64 Server Manager → Berechtigungen); bis dahin landet die Kopie im App-Ordner (`Android/data/<Paket>/files/backups`, per USB-Kabel am PC erreichbar). Die 5 neuesten Backups bleiben zusätzlich in der App.
 
+## Images
+| Image | Was es ist | Dateiname |
+|---|---|---|
+| Minecraft Bedrock | Offizieller Bedrock-Server über box64 | `bedrock-full.tar.gz` |
+| Minecraft Java + Bedrock | Paper (Java) + Geyser/Floodgate, natives ARM64-Java 25 | `paper-full.tar.gz` |
+
+Beide liegen im selben Release, z. B. `https://github.com/FGSeRaser/ARM64-Server-Manager/releases/download/v1.0.0/paper-full.tar.gz`. Der Mojang-Server ist nie Teil eines Images.
+
+> **Beide Images nutzen Port 19132 (UDP)**, auf demselben Handy darf also nur eines gleichzeitig laufen.
+
+### Paper-Image (Java + Bedrock zusammen)
+1. Image installieren, dann **Download / Update server** tippen und `latest` (oder eine Version wie `1.21.8`) eingeben. Das lädt Paper, Geyser und Floodgate.
+2. Einmal **Start** (beendet sich selbst), **Accept EULA** tippen ([Minecraft-EULA](https://aka.ms/MinecraftEULA)), nochmal **Start**, auf `Done` warten und mit `stop` beenden.
+3. **Bedrock setup (Geyser)** tippen, dann **Start**. Damit können Bedrock-Spieler ohne Java-Konto beitreten, und NetherNet wird aktiviert (nötig für Bedrock 26.60+).
+4. Java-Spieler: `<Handy-IP>:25565`, Bedrock-Spieler: `<Handy-IP>`, Port `19132`.
+5. **RAM** stellt den Java-Speicher ein (Standard `2G`; bei Handys mit 4 GB eher `1G`-`1536M`).
+
+Bedrock-Spieler haben kein Java-Konto, deshalb findet der normale Befehl `whitelist add` sie nicht. Die einfache Lösung, die funktioniert: Whitelist ausschalten (`whitelist off` in der Konsole und `white-list=false` unter **Settings**, damit es so bleibt). Floodgate hat zusätzlich einen eigenen Whitelist-Befehl, den ich nicht getestet habe. Für NetherNet brauchen Bedrock-Spieler TCP und UDP `19132` plus UDP `19133` (innerhalb von Tailscale nicht nötig).
+
 ### Mit Freunden übers Internet spielen: Tailscale
 Statt Ports im Router freizugeben, kannst du [Tailscale](https://tailscale.com/download) nutzen (für private Nutzung kostenlos, Apps für Android, iOS, Windows, macOS und Linux):
 1. Tailscale auf dem **Server-Handy** installieren und anmelden. Die Tailscale-Adresse (`100.x.y.z`) steht in der Tailscale-App.

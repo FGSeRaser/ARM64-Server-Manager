@@ -1,0 +1,18 @@
+#!/bin/bash
+# Backs up worlds + configs to /root/backups. Language: APP_LANG=de|en
+cd /root/paper-server 2>/dev/null || { echo "/root/paper-server missing"; exit 1; }
+BACKUP_DIR="/root/backups"
+TS=$(date +"%Y-%m-%d_%H-%M-%S")
+if [ "$APP_LANG" = "de" ]; then M_RUN="Sichere Welten und Einstellungen..."; M_OK="Backup gespeichert:"; M_ERR="Keine Welt gefunden (Server schon gestartet?)"
+else M_RUN="Backing up worlds and settings..."; M_OK="Backup saved:"; M_ERR="No world found (has the server been started?)"; fi
+ITEMS=()
+for i in world world_nether world_the_end server.properties ops.json whitelist.json launcher.properties plugins/Geyser-Spigot plugins/floodgate; do
+  [ -e "$i" ] && ITEMS+=("$i")
+done
+[ -d world ] || { echo "$M_ERR"; exit 1; }
+mkdir -p "$BACKUP_DIR"
+echo "$M_RUN"
+tar -czf "$BACKUP_DIR/paper_backup_$TS.tar.gz" "${ITEMS[@]}"
+echo "$M_OK $BACKUP_DIR/paper_backup_$TS.tar.gz"
+ls -1t "$BACKUP_DIR"/paper_backup_*.tar.gz 2>/dev/null | tail -n +6 | while read -r old; do rm -f "$old"; done
+ls -lh "$BACKUP_DIR" | tail -n 5

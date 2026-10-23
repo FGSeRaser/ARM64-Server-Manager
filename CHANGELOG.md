@@ -1,5 +1,8 @@
 # Changelog
 
+## Paper image
+- New image `paper-full.tar.gz`: Paper + Geyser + Floodgate (Java and Bedrock together), Java 25, NetherNet setup button.
+
 ## v1.0.0
 - First release: Flutter app with image install (local file or GitHub URL), start/stop, interactive console, foreground service for 24/7 operation, DE/EN UI.
 - Image format: Ubuntu rootfs + proot + box64 + start scripts + `actions.json` buttons.

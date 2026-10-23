@@ -1,0 +1,38 @@
+#!/bin/bash
+# Bedrock setup for Geyser: login via Floodgate (no Java account needed) + NetherNet transport.
+# Language: APP_LANG=de|en
+CFG=/root/paper-server/plugins/Geyser-Spigot/config.yml
+if [ "$APP_LANG" = "de" ]; then
+  M_NO="Geyser-Konfiguration fehlt. Starte den Server einmal komplett und stoppe ihn, dann nochmal."
+  M_OK="Fertig. Server neu starten. Bedrock-Spieler brauchen kein Java-Konto; Bedrock 26.40+ verbindet über NetherNet."
+  M_MISS="Schlüssel in der Geyser-Konfiguration nicht gefunden:"
+  M_CHK="Bitte prüfe den Abschnitt 'bedrock:' (oben ausgegeben) und siehe https://geysermc.org/wiki/geyser/setup"
+else
+  M_NO="Geyser config missing. Start the server once and stop it, then try again."
+  M_OK="Done. Restart the server. Bedrock players need no Java account; Bedrock 26.40+ connects via NetherNet."
+  M_MISS="Key not found in the Geyser config:"
+  M_CHK="Please check the 'bedrock:' section (printed above) and see https://geysermc.org/wiki/geyser/setup"
+fi
+[ -f "$CFG" ] || { echo "$M_NO"; exit 1; }
+cp -n "$CFG" "$CFG.bak" 2>/dev/null
+setkey() {  # setkey <key> <value>
+  if grep -qE "^[[:space:]]+$1:" "$CFG"; then
+    sed -i -E "s/^([[:space:]]+$1:[[:space:]]*).*/\1$2/" "$CFG"
+  else
+    echo "$M_MISS $1"; MISSING=1
+  fi
+}
+MISSING=0
+setkey auth-type floodgate
+setkey transport both
+if grep -qE "^[[:space:]]+webrtc-port:" "$CFG"; then
+  setkey webrtc-port 19133
+elif grep -qE "^[[:space:]]+transport:" "$CFG"; then
+  sed -i -E '/^[[:space:]]+transport:/a\  webrtc-port: 19133' "$CFG"
+else
+  echo "$M_MISS webrtc-port"; MISSING=1
+fi
+echo "--- bedrock section ---"
+sed -n '/^bedrock:/,/^[a-z]/p' "$CFG" | head -n 25
+grep -n 'auth-type' "$CFG"
+if [ "$MISSING" = 1 ]; then echo "$M_CHK"; else echo "$M_OK"; fi

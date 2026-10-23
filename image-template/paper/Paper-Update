@@ -1,0 +1,48 @@
+#!/bin/bash
+# Downloads Paper (+ Geyser and Floodgate so Bedrock players can join).
+# Usage: Paper-Update [latest|<minecraft version>]     Language: APP_LANG=de|en
+if [ "$APP_LANG" = "de" ]; then
+  T_START="--- Paper-Server laden / updaten ---"; T_API="Frage Paper-API ab..."
+  T_NOVER="Konnte die Version nicht ermitteln. Antwort der API:"; T_DL="Lade Paper herunter:"
+  T_FAIL="Download fehlgeschlagen (Netzwerk-Berechtigung der App prüfen)."; T_SHA="Prüfsumme stimmt nicht! Datei verworfen."
+  T_PL="Lade Plugin:"; T_PLFAIL="Plugin-Download fehlgeschlagen (Server läuft trotzdem, nur ohne Bedrock-Unterstützung):"
+  T_OK="Fertig. Beim ersten Start wird eine EULA-Datei angelegt: danach 'Accept EULA' tippen und erneut starten."
+else
+  T_START="--- Paper server download / update ---"; T_API="Asking the Paper API..."
+  T_NOVER="Could not determine the version. API answer:"; T_DL="Downloading Paper:"
+  T_FAIL="Download failed (check the app's network permission)."; T_SHA="Checksum mismatch! File discarded."
+  T_PL="Downloading plugin:"; T_PLFAIL="Plugin download failed (server still works, just without Bedrock support):"
+  T_OK="Done. On first start an EULA file is created: then tap 'Accept EULA' and start again."
+fi
+UA="arm64-server-manager (github.com/FGSeRaser/ARM64-Server-Manager)"
+API="https://fill.papermc.io/v3/projects/paper"
+mkdir -p /root/paper-server/plugins && cd /root/paper-server || exit 1
+echo "$T_START"
+VER="${1:-latest}"
+echo "$T_API"
+if [ "$VER" = "latest" ]; then
+  J=$(curl -fsSL -A "$UA" "$API") || { echo "$T_FAIL"; exit 1; }
+  VER=$(echo "$J" | jq -r '.versions[][]' 2>/dev/null | grep -E '^[0-9]+(\.[0-9]+)*$' | sort -V | tail -n1)
+  [ -z "$VER" ] && { echo "$T_NOVER"; echo "$J" | head -c 600; echo; exit 1; }
+fi
+B=$(curl -fsSL -A "$UA" "$API/versions/$VER/builds/latest") || { echo "$T_FAIL ($VER)"; exit 1; }
+URL=$(echo "$B" | jq -r '.downloads["server:default"].url // empty')
+SHA=$(echo "$B" | jq -r '.downloads["server:default"].checksums.sha256 // empty')
+[ -z "$URL" ] && { echo "$T_NOVER"; echo "$B" | head -c 600; echo; exit 1; }
+echo "$T_DL $VER"
+curl -fL -A "$UA" --progress-bar -o paper.jar.new "$URL" || { echo "$T_FAIL"; rm -f paper.jar.new; exit 1; }
+if [ -n "$SHA" ]; then
+  echo "$SHA  paper.jar.new" | sha256sum -c - >/dev/null 2>&1 || { echo "$T_SHA"; rm -f paper.jar.new; exit 1; }
+fi
+mv -f paper.jar.new paper.jar
+[ -f launcher.properties ] || printf '# RAM for the Java server, e.g. 1G, 2G, 3G\nram=2G\n' > launcher.properties
+for p in geyser floodgate; do
+  echo "$T_PL $p"
+  curl -fL -A "$UA" --progress-bar -o "plugins/$p-spigot.jar.new" \
+    "https://download.geysermc.org/v2/projects/$p/versions/latest/builds/latest/downloads/spigot" \
+    && mv -f "plugins/$p-spigot.jar.new" "plugins/$p-spigot.jar" \
+    || { echo "$T_PLFAIL $p"; rm -f "plugins/$p-spigot.jar.new"; }
+done
+# Bedrock players are sometimes kicked for "floating" unless flying is allowed
+[ -f server.properties ] || printf '# created by ARM64 Server Manager\nallow-flight=true\n' > server.properties
+echo "$T_OK"

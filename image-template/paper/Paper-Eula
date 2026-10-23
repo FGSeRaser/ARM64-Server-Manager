@@ -1,0 +1,15 @@
+#!/bin/bash
+# Accepts the Minecraft EULA (https://aka.ms/MinecraftEULA). Language: APP_LANG=de|en
+cd /root/paper-server 2>/dev/null || { echo "/root/paper-server missing"; exit 1; }
+if [ "$APP_LANG" = "de" ]; then
+  echo "Mit diesem Knopf akzeptierst du die Minecraft-EULA: https://aka.ms/MinecraftEULA"
+  M_NO="Starte den Server einmal, damit eula.txt angelegt wird (er beendet sich selbst), dann diesen Knopf nochmal."
+  M_OK="EULA akzeptiert. Jetzt Starten."
+else
+  echo "By tapping this button you accept the Minecraft EULA: https://aka.ms/MinecraftEULA"
+  M_NO="Start the server once so eula.txt is created (it stops by itself), then tap this button again."
+  M_OK="EULA accepted. You can start the server now."
+fi
+[ -f eula.txt ] || { echo "$M_NO"; exit 1; }
+sed -i 's/^eula=.*/eula=true/' eula.txt
+echo "$M_OK"

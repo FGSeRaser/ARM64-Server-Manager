@@ -2,17 +2,30 @@
 # Baut aus deinem laufenden Termux-Ubuntu ein KOMPLETTES Image für den
 # ARM64 Server Manager (Ubuntu + box64 + Bedrock + proot + Start-Skripte).
 #
-# Aufruf in Termux:   bash make-image.sh [distro-name]     (Standard: ubuntu)
-# Ergebnis:           ~/bedrock-full.tar.gz
+# Aufruf in Termux:   bash make-image.sh [distro-name] [profil]
+#   profil: bedrock (Standard) oder paper (Java + Bedrock über Geyser)
+# Ergebnis:           ~/storage/downloads/<profil>-full.tar.gz
 set -e
 
 DISTRO="${1:-ubuntu}"
+PROFILE="${2:-bedrock}"
+case "$PROFILE" in
+  bedrock)
+    PKGS="wget unzip ca-certificates"; CHECK='command -v wget >/dev/null && command -v unzip >/dev/null'
+    START_CMD=/usr/local/bin/Minecraft; UPDATE_CMD=/usr/local/bin/Minecraft-Update; BACKUP_CMD=/usr/local/bin/Minecraft-Backup
+    SERVER_DIR_NAME=minecraft-server ;;
+  paper)
+    PKGS="openjdk-25-jre-headless curl jq ca-certificates"; CHECK='command -v java >/dev/null && command -v curl >/dev/null && command -v jq >/dev/null'
+    START_CMD=/usr/local/bin/Paper-Run; UPDATE_CMD=/usr/local/bin/Paper-Update; BACKUP_CMD=/usr/local/bin/Paper-Backup
+    SERVER_DIR_NAME=paper-server ;;
+  *) echo "Unbekanntes Profil: $PROFILE (bedrock oder paper)"; exit 1 ;;
+esac
 ROOTFS="$PREFIX/var/lib/proot-distro/installed-rootfs/$DISTRO"
 OUT="$HOME/image-build"
 if [ -d "$HOME/storage/downloads" ]; then
-  RESULT="$HOME/storage/downloads/bedrock-full.tar.gz"
+  RESULT="$HOME/storage/downloads/$PROFILE-full.tar.gz"
 else
-  RESULT="$HOME/bedrock-full.tar.gz"
+  RESULT="$HOME/$PROFILE-full.tar.gz"
   echo "Hinweis: ~/storage/downloads fehlt (einmal 'termux-setup-storage' ausführen)."
   echo "Das Image landet vorerst in ~"
 fi
@@ -22,8 +35,12 @@ fi
 [ -f "$PREFIX/lib/libtalloc.so.2" ] || { echo "libtalloc.so.2 fehlt (pkg install libtalloc)"; exit 1; }
 [ -f "$PREFIX/libexec/proot/loader" ] || { echo "proot-loader fehlt"; exit 1; }
 
-echo "[0/4] Prüfe/installiere wget, unzip, ca-certificates im Ubuntu..."
-proot-distro login "$DISTRO" -- bash -c 'command -v wget >/dev/null && command -v unzip >/dev/null && [ -d /etc/ssl/certs ] || (apt-get update && apt-get install -y wget unzip ca-certificates)' || { echo "Installation fehlgeschlagen"; exit 1; }
+echo "[0/4] Prüfe/installiere: $PKGS ..."
+proot-distro login "$DISTRO" -- bash -c "($CHECK) && [ -d /etc/ssl/certs ] || (apt-get update && apt-get install -y $PKGS)" || { echo "Installation fehlgeschlagen"; exit 1; }
+# Skripte des Profils müssen im Ubuntu liegen:
+for c in "$START_CMD" "$UPDATE_CMD" "$BACKUP_CMD"; do
+  [ -f "$ROOTFS$c" ] || { echo "Fehlt im Ubuntu: $c (Skript nach /usr/local/bin kopieren, chmod 755)"; exit 1; }
+done
 
 echo "[1/4] Aufräumen im Ubuntu (apt-Cache)..."
 proot-distro login "$DISTRO" -- apt-get clean || true
@@ -72,25 +89,25 @@ exec "$D/proot/proot" $BINDS \
   "$@"
 EOF
 
-cat > "$OUT/start.sh" <<'EOF'
-#!/system/bin/sh
-D="$(cd "$(dirname "$0")" && pwd)"
-exec sh "$D/run.sh" /usr/local/bin/Minecraft
-EOF
-
-cat > "$OUT/update.sh" <<'EOF'
-#!/system/bin/sh
-D="$(cd "$(dirname "$0")" && pwd)"
-exec sh "$D/run.sh" /usr/local/bin/Minecraft-Update "$@"
-EOF
-
-cat > "$OUT/backup.sh" <<'EOF'
-#!/system/bin/sh
-D="$(cd "$(dirname "$0")" && pwd)"
-exec sh "$D/run.sh" /usr/local/bin/Minecraft-Backup
-EOF
+for pair in "start.sh:$START_CMD" "update.sh:$UPDATE_CMD" "backup.sh:$BACKUP_CMD"; do
+  printf '#!/system/bin/sh\nD="$(cd "$(dirname "$0")" && pwd)"\nexec sh "$D/run.sh" %s "$@"\n' "${pair#*:}" > "$OUT/${pair%%:*}"
+done
+printf '#!/system/bin/sh\nD="$(cd "$(dirname "$0")" && pwd)"\nexec sh "$D/run.sh" /usr/local/bin/Paper-Eula\n' > "$OUT/eula.sh"
+printf '#!/system/bin/sh\nD="$(cd "$(dirname "$0")" && pwd)"\nexec sh "$D/run.sh" /usr/local/bin/Paper-Floodgate\n' > "$OUT/floodgate.sh"
 
 # Knöpfe, die die App zusätzlich anzeigt
+if [ "$PROFILE" = "paper" ]; then
+cat > "$OUT/actions.json" <<'EOF'
+[
+  {"label": "Download / Update server", "cmd": "sh update.sh \"$ACTION_INPUT\"", "prompt": "Minecraft version (latest = newest, or e.g. 1.21.8)"},
+  {"label": "Accept EULA", "cmd": "sh eula.sh"},
+  {"label": "Bedrock setup (Geyser)", "cmd": "sh floodgate.sh"},
+  {"label": "Settings / Einstellungen", "edit": "rootfs/root/paper-server/server.properties"},
+  {"label": "RAM", "edit": "rootfs/root/paper-server/launcher.properties"},
+  {"label": "Backup", "cmd": "sh backup.sh", "export": "rootfs/root/backups"}
+]
+EOF
+else
 cat > "$OUT/actions.json" <<'EOF'
 [
   {"label": "Download / Update server", "cmd": "sh update.sh \"$ACTION_INPUT\"", "prompt": "Direct download link of the Bedrock server for Linux (.zip) from minecraft.net"},
@@ -98,6 +115,8 @@ cat > "$OUT/actions.json" <<'EOF'
   {"label": "Backup", "cmd": "sh backup.sh", "export": "rootfs/root/backups"}
 ]
 EOF
+fi
+[ "$PROFILE" = "paper" ] || rm -f "$OUT/eula.sh" "$OUT/floodgate.sh"
 
 chmod 755 "$OUT"/*.sh
 
@@ -109,7 +128,7 @@ echo "Was soll NICHT ins Image (z. B. Killing-Floor- oder Steam-Ordner)?"
 read -r -p "Namen, Leerzeichen getrennt (Enter = nichts ausschließen): " -a EXCL
 EXCLUDE_ARGS=()
 # Always excluded: the Mojang server files and worlds, backups, private files
-for n in minecraft-server backups .bash_history .ssh .cache .wget-hsts .viminfo .lesshst; do
+for n in minecraft-server paper-server backups .bash_history .ssh .cache .wget-hsts .viminfo .lesshst; do
   EXCLUDE_ARGS+=(--exclude="$DISTRO/root/$n")
 done
 for n in "${EXCL[@]}"; do

@@ -1,0 +1,27 @@
+#!/bin/bash
+# Starts the Paper server. RAM comes from /root/paper-server/launcher.properties (ram=2G).
+cd /root/paper-server 2>/dev/null || { echo "/root/paper-server missing"; exit 1; }
+if [ ! -f paper.jar ]; then
+  if [ "$APP_LANG" = "de" ]; then
+    echo "Der Server ist noch nicht heruntergeladen."
+    echo "Tippe auf 'Download / Update server' und gib 'latest' (neueste Version) oder eine Version wie 1.21.8 ein."
+  else
+    echo "The server has not been downloaded yet."
+    echo "Tap 'Download / Update server' and enter 'latest' (newest version) or a version like 1.21.8."
+  fi
+  exit 1
+fi
+if grep -qi '^eula=true' eula.txt 2>/dev/null; then :; else
+  if [ -f eula.txt ]; then
+    if [ "$APP_LANG" = "de" ]; then
+      echo "Du musst die Minecraft-EULA akzeptieren (https://aka.ms/MinecraftEULA): Tippe auf 'Accept EULA'."
+    else
+      echo "You must accept the Minecraft EULA (https://aka.ms/MinecraftEULA): tap 'Accept EULA'."
+    fi
+    exit 1
+  fi
+fi
+RAM=$(grep -E '^ram=' launcher.properties 2>/dev/null | head -n1 | cut -d= -f2 | tr -d '[:space:]')
+[ -z "$RAM" ] && RAM=2G
+echo "Java: $(java -version 2>&1 | head -n1) | RAM: $RAM"
+exec java -Xms256M -Xmx"$RAM" -XX:+UseSerialGC -Djava.io.tmpdir=/tmp -jar paper.jar --nogui
